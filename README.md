@@ -31,18 +31,24 @@ This project is designed as a portfolio-level AI engineering project to demonstr
 - pandas
 - Matplotlib
 
-## Planned Features
+## Features / Development Plan
 
-- Image preprocessing
-- Caption preprocessing and tokenization
+### Current Implementation
+
+- Dataset loading and preprocessing
 - Vocabulary construction
-- CNN-based image feature extraction
-- Attention-based caption decoder
-- Model training loop
-- Inference script for caption generation
+- CNN encoder and LSTM-based decoder structure
+- Training notebook
+- Inference notebook
+
+
+## Planned Improvement
+
 - BLEU score evaluation
 - Attention visualization
-- Sample prediction results
+- Sample generated captions
+- Refactored training and inference scripts
+- Simple demo interface
 
 ## Repository Structure
 
@@ -52,19 +58,22 @@ image-captioning-pytorch/
 ├── README.md
 ├── requirements.txt
 ├── src/
-│   ├── dataset.py
+│   ├── data_loader.py
 │   ├── model.py
-│   ├── train.py
-│   ├── inference.py
-│   └── utils.py
+│   ├── vocabulary.py
+│   ├── train.py              # planned
+│   ├── inference.py          # planned
+│   └── utils.py              # planned
 │
 ├── notebooks/
-│   └── image_captioning_exploration.ipynb
+│   ├── 01_dataset_exploration.ipynb
+│   ├── 02_training_experiment.ipynb
+│   └── 03_inference_demo.ipynb
 │
 ├── configs/
-│   └── config.yaml
+│   └── config.yaml           # planned
 │
 ├── assets/
-│   └── sample_results/
+│   └── sample_results/       # planned
 │
 └── .gitignore
