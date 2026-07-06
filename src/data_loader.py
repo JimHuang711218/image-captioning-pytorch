@@ -3,7 +3,7 @@ import nltk
 import os
 import torch
 import torch.utils.data as data
-from src.vocabulary import Vocabulary
+from vocabulary import Vocabulary
 from PIL import Image
 from pycocotools.coco import COCO
 import numpy as np
