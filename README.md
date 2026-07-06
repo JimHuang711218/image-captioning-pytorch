@@ -1,5 +1,7 @@
 # Image Captioning with PyTorch
 
+This project was initially inspired by my Udacity Computer Vision coursework and has been refactored and extended into a portfolio-level AI engineering project.
+
 This project implements an image captioning system that generates natural-language descriptions from input images by combining computer vision and sequence modeling techniques.
 
 The goal of this project is to build an end-to-end AI pipeline using a CNN-based image encoder and an attention-based decoder.
