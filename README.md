@@ -1,27 +1,79 @@
-# CVND---Image-Captioning-Project
+# Image Captioning with PyTorch
 
-# Instructions  
-1. Clone this repo: https://github.com/cocodataset/cocoapi  
-```
-git clone https://github.com/cocodataset/cocoapi.git  
-```
+This project was initially inspired by my Udacity Computer Vision coursework and has been refactored and extended into a portfolio-level AI engineering project.
 
-2. Setup the coco API (also described in the readme [here](https://github.com/cocodataset/cocoapi)) 
-```
-cd cocoapi/PythonAPI  
-make  
-cd ..
-```
+This project implements an image captioning system that generates natural-language descriptions from input images by combining computer vision and sequence modeling techniques.
 
-3. Download some specific data from here: http://cocodataset.org/#download (described below)
+The goal of this project is to build an end-to-end AI pipeline using a CNN-based image encoder and an attention-based decoder.
 
-* Under **Annotations**, download:
-  * **2014 Train/Val annotations [241MB]** (extract captions_train2014.json and captions_val2014.json, and place at locations cocoapi/annotations/captions_train2014.json and cocoapi/annotations/captions_val2014.json, respectively)  
-  * **2014 Testing Image info [1MB]** (extract image_info_test2014.json and place at location cocoapi/annotations/image_info_test2014.json)
+## Project Overview
 
-* Under **Images**, download:
-  * **2014 Train images [83K/13GB]** (extract the train2014 folder and place at location cocoapi/images/train2014/)
-  * **2014 Val images [41K/6GB]** (extract the val2014 folder and place at location cocoapi/images/val2014/)
-  * **2014 Test images [41K/6GB]** (extract the test2014 folder and place at location cocoapi/images/test2014/)
+Image captioning is a multimodal deep learning task that connects Computer Vision and Natural Language Processing. Given an input image, the model learns to extract visual features and generate a descriptive sentence word by word.
 
-4. The project is structured as a series of Jupyter notebooks that are designed to be completed in sequential order (`0_Dataset.ipynb, 1_Preliminaries.ipynb, 2_Training.ipynb, 3_Inference.ipynb`).
+This project is designed as a portfolio-level AI engineering project to demonstrate:
+
+- Computer vision feature extraction
+- Sequence modeling for natural language generation
+- Attention mechanism
+- PyTorch model implementation
+- Training and inference pipeline design
+- Practical AI project organization
+
+## Tech Stack
+
+- Python
+- PyTorch
+- CNN Encoder
+- LSTM / Attention Decoder
+- NLP preprocessing
+- Computer Vision
+- NumPy
+- pandas
+- Matplotlib
+
+## Features / Development Plan
+
+### Current Implementation
+
+- Dataset loading and preprocessing
+- Vocabulary construction
+- CNN encoder and LSTM-based decoder structure
+- Training notebook
+- Inference notebook
+
+
+## Planned Improvement
+
+- BLEU score evaluation
+- Attention visualization
+- Sample generated captions
+- Refactored training and inference scripts
+- Simple demo interface
+
+## Repository Structure
+
+```text
+image-captioning-pytorch/
+│
+├── README.md
+├── requirements.txt
+├── src/
+│   ├── data_loader.py
+│   ├── model.py
+│   ├── vocabulary.py
+│   ├── train.py              # planned
+│   ├── inference.py          # planned
+│   └── utils.py              # planned
+│
+├── notebooks/
+│   ├── 01_dataset_exploration.ipynb
+│   ├── 02_training_experiment.ipynb
+│   └── 03_inference_demo.ipynb
+│
+├── configs/
+│   └── config.yaml           # planned
+│
+├── assets/
+│   └── sample_results/       # planned
+│
+└── .gitignore
