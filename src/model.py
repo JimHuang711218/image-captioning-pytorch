@@ -3,45 +3,55 @@ import torch.nn as nn
 import torchvision.models as models
 
 
+LSTMState = tuple[torch.Tensor, torch.Tensor]
+
+
 class EncoderCNN(nn.Module):
     """
     CNN encoder that extracts image features using a pretrained ResNet-34
     and projects them into the decoder embedding space.
     """
 
-    def __init__(self, embed_size):
-        super(EncoderCNN, self).__init__()
+    def __init__(self, embed_size: int) -> None:
+        super().__init__()
 
-        # Load a pretrained ResNet-34 backbone.
         resnet = models.resnet34(
             weights=models.ResNet34_Weights.DEFAULT
         )
 
-        # Freeze the pretrained CNN parameters.
         for param in resnet.parameters():
             param.requires_grad = False
 
-        # Remove the final classification layer.
-        modules = list(resnet.children())[:-1]
-        self.resnet = nn.Sequential(*modules)
+        self.resnet = nn.Sequential(
+            *list(resnet.children())[:-1]
+        )
 
-        # Project CNN features into the embedding space.
-        self.embed = nn.Linear(resnet.fc.in_features, embed_size)
+        self.embed = nn.Linear(
+            resnet.fc.in_features,
+            embed_size
+        )
 
-    def forward(self, images):
+    def forward(
+        self,
+        images: torch.Tensor
+    ) -> torch.Tensor:
         """
-        Extract image features and project them into the embedding space.
-
         Args:
-            images: Tensor of shape
+            images:
+                Tensor of shape
                 [batch_size, channels, height, width]
 
         Returns:
             Tensor of shape
                 [batch_size, embed_size]
         """
+
         features = self.resnet(images)
-        features = features.view(features.size(0), -1)
+
+        # [B, 512, 1, 1] -> [B, 512]
+        features = torch.flatten(features, 1)
+
+        # [B, 512] -> [B, embed_size]
         features = self.embed(features)
 
         return features
@@ -54,17 +64,18 @@ class DecoderRNN(nn.Module):
 
     def __init__(
         self,
-        embed_size,
-        hidden_size,
-        vocab_size,
-        num_layers=1
-    ):
-        super(DecoderRNN, self).__init__()
+        embed_size: int,
+        hidden_size: int,
+        vocab_size: int,
+        num_layers: int = 1
+    ) -> None:
+        super().__init__()
 
-        # Convert token IDs into embedding vectors.
-        self.embed = nn.Embedding(vocab_size, embed_size)
+        self.embed = nn.Embedding(
+            vocab_size,
+            embed_size
+        )
 
-        # Process image and word embeddings sequentially.
         self.lstm = nn.LSTM(
             input_size=embed_size,
             hidden_size=hidden_size,
@@ -72,57 +83,61 @@ class DecoderRNN(nn.Module):
             batch_first=True
         )
 
-        # Map LSTM hidden states to vocabulary scores.
-        self.linear = nn.Linear(hidden_size, vocab_size)
+        self.linear = nn.Linear(
+            hidden_size,
+            vocab_size
+        )
 
-    def forward(self, features, captions):
+    def forward(
+        self,
+        features: torch.Tensor,
+        captions: torch.Tensor
+    ) -> torch.Tensor:
         """
-        Run the decoder during training.
+        Training forward pass.
 
         Args:
             features:
-                Image features with shape
                 [batch_size, embed_size]
 
             captions:
-                Caption token IDs with shape
                 [batch_size, caption_length]
 
         Returns:
-            Vocabulary logits with shape
+            Vocabulary logits:
                 [batch_size, caption_length, vocab_size]
         """
 
-        # Remove the final <end> token because the model predicts
-        # the next token at every time step.
-        embeddings = self.embed(captions[:, :-1])
+        embeddings = self.embed(
+            captions[:, :-1]
+        )
 
-        # Add the sequence dimension to image features.
-        features = features.unsqueeze(1)
+        image_features = features.unsqueeze(1)
 
-        # Use the image embedding as the first LSTM input,
-        # followed by the caption word embeddings.
         inputs = torch.cat(
-            (features, embeddings),
+            (image_features, embeddings),
             dim=1
         )
 
-        # Process the complete sequence.
         hiddens, _ = self.lstm(inputs)
 
-        # Convert hidden states into vocabulary logits.
         outputs = self.linear(hiddens)
 
         return outputs
 
-    def sample(self, inputs, states=None, max_len=20):
+    def sample(
+        self,
+        features: torch.Tensor,
+        states: LSTMState | None = None,
+        max_len: int = 20,
+        end_token_id: int | None = None
+    ) -> list[int]:
         """
         Generate a caption using greedy decoding.
 
         Args:
-            inputs:
-                Encoded image features with shape
-                [batch_size, 1, embed_size]
+            features:
+                Tensor of shape [1, embed_size].
 
             states:
                 Optional initial LSTM hidden and cell states.
@@ -130,23 +145,49 @@ class DecoderRNN(nn.Module):
             max_len:
                 Maximum number of generated tokens.
 
+            end_token_id:
+                Vocabulary ID corresponding to <end>.
+
         Returns:
-            List of predicted vocabulary token IDs.
+            List of predicted token IDs.
+
+        Note:
+            Current implementation supports batch_size = 1.
         """
 
-        predicted_sentence = []
+        if features.size(0) != 1:
+            raise ValueError(
+                "DecoderRNN.sample currently supports batch_size=1 only."
+            )
+
+        predicted_sentence: list[int] = []
+
+        inputs = features.unsqueeze(1)
 
         for _ in range(max_len):
+            hiddens, states = self.lstm(
+                inputs,
+                states
+            )
 
-            # Predict the next token.
-            hiddens, states = self.lstm(inputs, states)
-            outputs = self.linear(hiddens.squeeze(1))
+            logits = self.linear(
+                hiddens[:, -1, :]
+            )
 
-            _, predicted = outputs.max(1)
+            predicted = logits.argmax(dim=1)
 
-            predicted_sentence.append(predicted.item())
+            token_id = predicted.item()
+            predicted_sentence.append(token_id)
 
-            # Feed the predicted token back into the LSTM.
-            inputs = self.embed(predicted).unsqueeze(1)
+            if (
+                end_token_id is not None
+                and token_id == end_token_id
+            ):
+                break
+
+            inputs = self.embed(
+                predicted
+            ).unsqueeze(1)
 
         return predicted_sentence
+
