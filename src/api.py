@@ -30,18 +30,18 @@ device = torch.device(
     "mps" if torch.backends.mps.is_available() else "cpu"
 )
 
-vocab_path = PROJECT_ROOT / "notebooks" / "vocab.pkl"
+vocab_path = PROJECT_ROOT / "artifacts" / "vocab.pkl"
 
 encoder_checkpoint = (
     PROJECT_ROOT
-    / "notebooks"
+    / "artifacts"
     / "models"
     / "encoder-3.pt"
 )
 
 decoder_checkpoint = (
     PROJECT_ROOT
-    / "notebooks"
+    / "artifacts"
     / "models"
     / "decoder-3.pt"
 )

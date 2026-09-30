@@ -1,0 +1,27 @@
+# Git
+.git/
+.gitignore
+
+# Python Cache
+__pycache__/
+.py[cod]
+
+# Test Cache
+.pytest_cache/
+
+# Development / experimentation
+notebooks/
+tests/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
