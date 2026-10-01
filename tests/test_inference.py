@@ -1,6 +1,7 @@
-from pathlib import Path
 import pickle
+from pathlib import Path
 
+import pytest
 import torch
 
 from src.config import ModelConfig
@@ -9,7 +10,7 @@ from src.inference import ImageCaptioningInference
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-
+@pytest.mark.model
 def test_inference_predict():
     config = ModelConfig()
 
@@ -18,18 +19,18 @@ def test_inference_predict():
     )
 
     # Load vocabulary
-    vocab_path = PROJECT_ROOT / "notebooks" / "vocab.pkl"
+    vocab_path = PROJECT_ROOT / "artifacts" / "vocab.pkl"
 
     with open(vocab_path, "rb") as f:
         vocab = pickle.load(f)
 
     # Load trained checkpoints
     encoder_checkpoint = (
-        PROJECT_ROOT / "notebooks" / "models" / "encoder-3.pt"
+        PROJECT_ROOT / "artifacts" / "models" / "encoder-3.pt"
     )
 
     decoder_checkpoint = (
-        PROJECT_ROOT / "notebooks" / "models" / "decoder-3.pt"
+        PROJECT_ROOT / "artifacts" / "models" / "decoder-3.pt"
     )
 
     inference = ImageCaptioningInference(

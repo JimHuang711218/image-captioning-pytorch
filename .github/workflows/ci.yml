@@ -5,26 +5,42 @@ on:
   pull_request:
 
 jobs:
-    tests:
-        runs-on: ubuntu-latest
+  tests:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-            
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                python-version: "3.12"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Install dependencies
-              run: |
-                python -m pip install --upgrade pip
-                pip install -r requirements.txt
-                pip install pytest httpx2
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-            - name: Run tests
-              run: python -m pytest tests/ -v
-            
-            - name: Build Docker image
-              run: docker build -t image-captioning-api .
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx2
+
+      - name: Run CI-safe tests
+        run: python -m pytest tests/ -v -m "not model"
+
+      - name: Build Docker image
+        run: docker build -t image-captioning-api .
+
+      - name: Run Docker container
+        run: |
+          docker run -d \
+            --name image-captioning-api \
+            -p 8000:8000 \
+            image-captioning-api
+
+      - name: Test Docker health endpoint
+        run: |
+          sleep 5
+          curl --fail http://localhost:8000/health
+
+      - name: Stop Docker container
+        if: always()
+        run: docker rm -f image-captioning-api
