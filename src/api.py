@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 
 import torch
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 
 from src.config import ModelConfig
 from src.inference import ImageCaptioningInference
@@ -24,44 +24,52 @@ def health_check():
         "status": "healthy"
     }
 
-config = ModelConfig()
 
-device = torch.device(
-    "mps" if torch.backends.mps.is_available() else "cpu"
-)
+def create_inference_service():
+    config = ModelConfig()
 
-vocab_path = PROJECT_ROOT / "artifacts" / "vocab.pkl"
+    device = torch.device(
+        "mps" if torch.backends.mps.is_available() else "cpu"
+    )
 
-encoder_checkpoint = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "models"
-    / "encoder-3.pt"
-)
+    vocab_path = PROJECT_ROOT / "artifacts" / "vocab.pkl"
 
-decoder_checkpoint = (
-    PROJECT_ROOT
-    / "artifacts"
-    / "models"
-    / "decoder-3.pt"
-)
+    encoder_checkpoint = (
+        PROJECT_ROOT
+        / "artifacts"
+        / "models"
+        / "encoder-3.pt"
+    )
+
+    decoder_checkpoint = (
+        PROJECT_ROOT
+        / "artifacts"
+        / "models"
+        / "decoder-3.pt"
+    )
+
+    with open(vocab_path, "rb") as file:
+        vocab = pickle.load(file)
+
+    return ImageCaptioningInference(
+        config=config,
+        encoder_checkpoint=encoder_checkpoint,
+        decoder_checkpoint=decoder_checkpoint,
+        vocab=vocab,
+        device=device,
+    )
 
 
-with open(vocab_path, "rb") as file:
-    vocab = pickle.load(file)
+def get_inference_service():
+    return create_inference_service()
 
-
-inference_service = ImageCaptioningInference(
-    config=config,
-    encoder_checkpoint=encoder_checkpoint,
-    decoder_checkpoint=decoder_checkpoint,
-    vocab=vocab,
-    device=device,
-)
 
 @app.post("/predict")
 async def predict(
-    image: UploadFile = File(...)
+    image: UploadFile = File(...),
+    inference_service: ImageCaptioningInference = Depends(
+        get_inference_service
+    ),
 ):
     if image.content_type is None:
         raise HTTPException(

@@ -2,8 +2,17 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from src.api import app
+from src.api import app, get_inference_service
 
+
+class FakeInferenceService:
+    def predict(self, image_path: Path) -> str:
+        return "a test caption"
+
+
+app.dependency_overrides[get_inference_service] = (
+    lambda: FakeInferenceService()
+)
 
 client = TestClient(app)
 
@@ -17,6 +26,7 @@ def test_health_check():
     assert response.json() == {
         "status": "healthy"
     }
+
 
 def test_predict_rejects_non_image():
     response = client.post(
@@ -35,7 +45,8 @@ def test_predict_rejects_non_image():
         "detail": "Uploaded file must be an image."
     }
 
-def test_predict_with_real_image():
+
+def test_predict_returns_caption():
     image_path = (
         PROJECT_ROOT
         / "tests"
@@ -60,12 +71,6 @@ def test_predict_with_real_image():
         )
 
     assert response.status_code == 200
-
-    response_json = response.json()
-
-    assert "caption" in response_json
-    assert isinstance(
-        response_json["caption"],
-        str
-    )
-    assert len(response_json["caption"]) > 0
+    assert response.json() == {
+        "caption": "a test caption"
+    }

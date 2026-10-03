@@ -1,6 +1,7 @@
 import pickle
 from pathlib import Path
 
+import pytest
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -12,6 +13,7 @@ from src.model import EncoderCNN, DecoderRNN
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.mark.model
 def test_v1_checkpoint_inference():
     config = ModelConfig()
 
@@ -19,7 +21,7 @@ def test_v1_checkpoint_inference():
         "cuda" if torch.cuda.is_available() else "cpu"
     )
 
-    vocab_path = PROJECT_ROOT / "notebooks" / "vocab.pkl"
+    vocab_path = PROJECT_ROOT / "artifacts" / "vocab.pkl"
 
     with vocab_path.open("rb") as f:
         vocab = pickle.load(f)
@@ -39,14 +41,14 @@ def test_v1_checkpoint_inference():
 
     encoder_path = (
         PROJECT_ROOT
-        / "notebooks"
+        / "artifacts"
         / "models"
         / "encoder-3.pt"
     )
 
     decoder_path = (
         PROJECT_ROOT
-        / "notebooks"
+        / "artifacts"
         / "models"
         / "decoder-3.pt"
     )
@@ -98,6 +100,4 @@ def test_v1_checkpoint_inference():
             max_len=config.max_caption_length
         )
 
-    assert len(
-        predicted_ids
-    ) > 0
+    assert len(predicted_ids) > 0
