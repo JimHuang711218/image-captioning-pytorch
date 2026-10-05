@@ -1,10 +1,10 @@
 # Image Captioning with PyTorch
 
-An end-to-end image captioning system built with **PyTorch**, combining computer vision and natural language processing to generate natural-language descriptions from images.
+A production-oriented image captioning system built with **PyTorch**, combining Computer Vision and Natural Language Processing to generate natural-language dexcriptions from images.
 
-This project was initially inspired by my Udacity Computer Vision coursework and has since been refactored and extended into a portfolio-level AI engineering project.
+This project was initially developed as part of my Udacity Computer Vision coursework and has since been **refactored, productionized, containerized, and integrated with an automated CI/CD pipeline** as a portfolio-level AI engineering project.
 
-The current V1 implementation uses a **CNN-based image encoder** to extract visual features and an **LSTM-based decoder** to generate captions word by word.
+The current V1 model uses a CNN-based image encoder and an LSTM-based decoder, while the surrounding system demonstrates the engineering required to move a machine learning model from experimentation toward a deployable AI service.
 
 ## Project Overview
 
@@ -18,15 +18,17 @@ Given an input image, the model:
 4. Passes the image representation to an LSTM decoder.
 5. Generates a natural-language caption token by token.
 
-The project demonstrates:
+Beyond model development, this project now includes a production-oriented inference and delivery pipeline with:
 
-- Computer vision feature extraction
-- Sequence modeling for natural language generation
-- Vocabulary construction and tokenization
-- PyTorch model implementation
-- End-to-end training and inference pipelines
-- Model checkpointing
-- Practical AI project organization
+- Module PyTorch inference
+- FastAPI model serving
+- Automated testing
+- Docker containization
+- Container health checks
+- GitHub Actions CI/CD
+- Docker image publishing to GitHub Container Registry (GHCR)
+
+The goal is not only to train an image-captioning model, but also to understand and implement the engineering lifecycle required to run an ML model into a maintainable software service.
 
 ## Model Architecture
 
@@ -53,12 +55,52 @@ Vocabulary Projection
      │
      ▼
 Generated Caption
+     |
+     ▼
+ Fast API
+     |
+     ▼
+REST API Response
 ```
 
 The encoder extracts a compact visual representation from the input image, while the LSTM decoder models the caption as a sequence and predicts the next token based on the image features and previously generated words.
 
+The inference pipeline encapsulates model loading, preprocessing, caption generation, and token decoding an API layer.
+
+## Production Delivery Pipeline
+
+The project includes an automated CI/CD workflow using **GitHub Actions**
+
+```text
+Code Change
+     │
+     ▼
+Git Push / Pull Request
+     │
+     ▼
+GitHub Actions
+     │
+     ├──► Install Dependencies
+     │
+     ├──► Run CI-Safe Tests
+     │
+     ├──► Build Docker Image
+     │
+     ├──► Start Container
+     │
+     ├──► API Health / Smoke Test
+     │
+     └──► Publish Docker Image
+                │
+                ▼
+      GitHub Container Registry
+```
+
+This pipeline automatically verifies that changes can pass the test suite, build successfully into a Docker image, launch as a running service, and respond correctly through the API before the container image is published.
+
 ## Tech Stack
 
+### Machine Learning
 - Python
 - PyTorch
 - Torchvision
@@ -71,10 +113,27 @@ The encoder extracts a compact visual representation from the input image, while
 - Matplotlib
 - MS COCO Dataset
 
+### Software Engineering
+- FastAPI
+- Pytest
+- Docker
+- REST API
+- Health checks
+- Smoke testing
+
+### CI/CD
+- GitHub Actions
+- GitHub Container Resgistry
+- Automated testing
+- Automated Docker builds
+- Automated container verification
+- Docker image publishing
+
 ## Current Implementation
 
-The V1 pipeline currently includes:
+The current system includes:
 
+**Model Deployment**
 - MS COCO dataset loading and preprocessing
 - Image augmentation and normalization
 - Vocabulary construction
@@ -84,9 +143,43 @@ The V1 pipeline currently includes:
 - Training pipeline
 - Loss and perplexity logging
 - Model checkpointing
-- Model loading
-- End-to-end inference
-- Generated caption output
+
+**Inference**
+- Production-oriented inference pipeline
+- Model checkpoint loading
+- Image preprocessing
+- Token generation
+- Vocabulary decoding
+- End-to-end caption generation
+
+**API Serving**
+- FastAPI inference service
+- Image input handling
+- Caption response generation
+- Health endpoint
+
+**Testing**
+- Automated Pytest test suite
+- CI-safe tests
+- API verification
+- Container smoke testing
+
+**Containerization**
+- Dockerized application
+- Reproducible runtime environment
+- Dependency installation through requirements.txt
+- Production source and artifact packaging
+- Exposed API serving on prot 8000
+
+**CI/CD**
+- Automated GitHub Actions workflow
+- Tests triggered by pushes and pull requests
+- Docker image build inside CI
+- Container startup verification
+- API health checkpoint
+- GitHub Container Registry authentication
+- Docker image tagging
+- Docker image publishing to GHCR
 
 ## Training
 
@@ -113,13 +206,8 @@ Vocabulary Scores
 Cross-Entropy Loss
 ```
 
-Training progress is recorded in:
+Training progress is recorded during model development, while model checkpoints are excluded from Gti tracking to keep the repository lightweight.
 
-```text
-notebooks/training_log.txt
-```
-
-Model checkpoints are generated during training but are excluded from Git tracking to keep the repository lightweight.
 
 ## Inference
 
@@ -136,33 +224,119 @@ Generated caption:
 
 This example demonstrates that the complete inference pipeline is operational while also highlighting limitations of the current V1 model. The generated sentence is grammatically coherent but does not fully correspond to the visual content of the image.
 
+## API Serving
+
+The trained model is exposed through a FastAPI REST service.
+
+At runtime:
+
+```text
+Client
+  |
+  | Image Request
+  ▼
+Fast API
+  |
+  ▼
+Inference Pipeline
+  |
+  ├⎯ Image Preprocessing
+  ├⎯ CNN Encoding
+  ├⎯ LSTM Decoding
+  └── Vocabulary Decoding
+  │
+  ▼
+Generated Caption
+  │
+  ▼
+JSON Response
+```
+A health endpoint is also provided so that local environments, Docker containers, and CI workflows can verify that the service is running correctly.
+
+## Docker
+
+The application is packaged as a Docker image to provide a reproducible runtime environment.
+
+The container includes the application source code, Python dependencies, and required production artifacts.
+
+The containerized service runs the FastAPI application with Uvicorn and exposes the API through port 8000.
+
+```text
+Docker Image
+     │
+     ▼
+Docker Container
+     │
+     ▼
+Uvicorn
+     │
+     ▼
+FastAPI
+     │
+     ▼
+Image Captioning Inference
+```
+
+## CI/CD
+
+GitHub Actions automatically validates changes pushed to the repository.
+
+The CI/CD workflow performs the following sequence:
+```text
+Checkout Repository
+        ↓
+Set Up Python
+        ↓
+Install Dependencies
+        ↓
+Run CI-Safe Tests
+        ↓
+Build Docker Image
+        ↓
+Start Docker Container
+        ↓
+Test Health Endpoint
+        ↓
+Authenticate with GHCR
+        ↓
+Tag Docker Image
+        ↓
+Push Docker Image
+```
+This ensures that the application is tested not only as Python source code but also as a running containerized service.
+
 ## Current Limitations
 
-The current implementation is intended as a V1 baseline and still has several limitations:
+The current model represents a V1 baseline and still has several ML limitations:
 
 - Caption generation can contain semantic errors or hallucinated objects.
 - Decoding currently uses a simple sequential generation strategy.
 - Model performance depends strongly on training duration and dataset coverage.
 - No quantitative caption-quality evaluation is currently included.
-- The current decoder does not implement an attention mechanism.
+- The decoder does not yet implement an attention mechanism.
 
-These limitations provide clear directions for the next development stage.
+The production infrastructure is therefore more mature than the current baseline model architecture, leaving clear opportunities to improve both model quality and system capabilities.
 
 ## Planned Improvements
 
-Future development will focus on improving both model quality and engineering maturity:
+Future development will focus on both ML capability and production engineering.
 
+**Model Improvements**
 - BLEU and CIDEr evaluation
 - Attention-based image captioning
 - Attention visualization
 - Beam-search decoding
 - Additional qualitative inference examples
-- Refactored standalone training script
-- Refactored standalone inference script
-- Configuration management
-- Automated testing
-- Simple demo interface
-- Containerized deployment
+
+**Engineering Improvements**
+- Refactor notebook-based training into standalone Python modules
+- Configuration management improvements
+- Additional unit and integration tests
+- Improved model artifact management
+- API observability and logging
+- Deployment-oriented configuration
+- Simple interactive demo interface
+- C++ inference and performance-oriented experimentation
 
 ## Repository Structure
 
@@ -172,57 +346,55 @@ image-captioning-pytorch/
 ├── README.md
 ├── LICENSE
 ├── requirements.txt
+├── pyproject.toml
+├── Dockerfile
+├── .dockerignore
 ├── .gitignore
 │
 ├── src/
 │   ├── __init__.py
+│   ├── api.py
+│   ├── config.py
 │   ├── data_loader.py
+│   ├── inference.py
 │   ├── model.py
 │   └── vocabulary.py
 │
+├── tests/
+│
+├── artifacts/
+│
 ├── notebooks/
-│   ├── 0_Dataset.ipynb
-│   ├── 1_Preliminaries.ipynb
-│   ├── 2_Training.ipynb
-│   ├── 3_Inference.ipynb
-│   └── training_log.txt
 │
 ├── images/
-│   ├── coco-examples.jpg
-│   ├── encoder.png
-│   ├── decoder.png
-│   └── encoder-decoder.png
 │
 └── .github/
     └── workflows/
+        └── ci.yml
 ```
-
-Model checkpoints, datasets, and generated vocabulary files are intentionally excluded from Git tracking.
+Model checkpoints, datasets, caches, and other large development artifacts are excluded from Git tracking where appropriate.
 
 ## Development Status
 
-**Current milestone: V1 — End-to-End Training and Inference Pipeline**
+**Current milestone: Current milestone: Productionization — Stage 5 Complete
 
-The complete baseline workflow is operational:
+Completed engineering stages include:
 
 ```text
-Dataset
-   ↓
-Preprocessing
-   ↓
-Vocabulary
-   ↓
-CNN Encoder
-   ↓
-LSTM Decoder
-   ↓
-Training
-   ↓
-Checkpoint
-   ↓
-Inference
-   ↓
-Generated Caption
+Model Development
+       ↓
+Modular Inference
+       ↓
+FastAPI Serving
+       ↓
+Automated Testing
+       ↓
+Dockerization
+       ↓
+CI/CD
+       ↓
+GitHub Container Registry
 ```
+The project has evolved from a notebook-centered deep learning project into a containerized AI inference service with automated testing and delivery infrastructure.
 
-The next stage will focus on quantitative evaluation, improved decoding, attention mechanisms, testing, and deployment-oriented engineering.
+The next stages will continue improving production readiness, model quality, training architecture, and ML systems engineering capabilities.
