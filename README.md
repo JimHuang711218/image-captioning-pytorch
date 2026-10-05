@@ -1,6 +1,6 @@
 # Image Captioning with PyTorch
 
-A production-oriented image captioning system built with **PyTorch**, combining Computer Vision and Natural Language Processing to generate natural-language dexcriptions from images.
+A production-oriented image captioning system built with **PyTorch**, combining Computer Vision and Natural Language Processing to generate natural-language descriptions from images.
 
 This project was initially developed as part of my Udacity Computer Vision coursework and has since been **refactored, productionized, containerized, and integrated with an automated CI/CD pipeline** as a portfolio-level AI engineering project.
 
@@ -20,15 +20,15 @@ Given an input image, the model:
 
 Beyond model development, this project now includes a production-oriented inference and delivery pipeline with:
 
-- Module PyTorch inference
+- Modular PyTorch inference
 - FastAPI model serving
 - Automated testing
-- Docker containization
+- Docker containerization
 - Container health checks
 - GitHub Actions CI/CD
 - Docker image publishing to GitHub Container Registry (GHCR)
 
-The goal is not only to train an image-captioning model, but also to understand and implement the engineering lifecycle required to run an ML model into a maintainable software service.
+The goal is not only to train an image-captioning model, but also to understand and implement the engineering lifecycle required to turn an ML model into a maintainable software service.
 
 ## Model Architecture
 
@@ -57,7 +57,7 @@ Vocabulary Projection
 Generated Caption
      |
      ▼
- Fast API
+ FastAPI
      |
      ▼
 REST API Response
@@ -65,11 +65,11 @@ REST API Response
 
 The encoder extracts a compact visual representation from the input image, while the LSTM decoder models the caption as a sequence and predicts the next token based on the image features and previously generated words.
 
-The inference pipeline encapsulates model loading, preprocessing, caption generation, and token decoding an API layer.
+The inference pipeline encapsulates model loading, preprocessing, caption generation, and token decoding behind an API layer.
 
 ## Production Delivery Pipeline
 
-The project includes an automated CI/CD workflow using **GitHub Actions**
+The project includes an automated CI/CD workflow using **GitHub Actions**.
 
 ```text
 Code Change
@@ -123,7 +123,7 @@ This pipeline automatically verifies that changes can pass the test suite, build
 
 ### CI/CD
 - GitHub Actions
-- GitHub Container Resgistry
+- GitHub Container Resgistry (GHCR)
 - Automated testing
 - Automated Docker builds
 - Automated container verification
@@ -133,7 +133,7 @@ This pipeline automatically verifies that changes can pass the test suite, build
 
 The current system includes:
 
-**Model Deployment**
+**Model Development**
 - MS COCO dataset loading and preprocessing
 - Image augmentation and normalization
 - Vocabulary construction
@@ -169,7 +169,7 @@ The current system includes:
 - Reproducible runtime environment
 - Dependency installation through requirements.txt
 - Production source and artifact packaging
-- Exposed API serving on prot 8000
+- Exposed API serving on port 8000
 
 **CI/CD**
 - Automated GitHub Actions workflow
@@ -235,7 +235,7 @@ Client
   |
   | Image Request
   ▼
-Fast API
+FastAPI
   |
   ▼
 Inference Pipeline
