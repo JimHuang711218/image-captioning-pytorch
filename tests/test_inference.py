@@ -1,5 +1,6 @@
 import pickle
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 import torch
@@ -50,3 +51,68 @@ def test_inference_predict():
 
     assert isinstance(caption, str)
     assert len(caption) > 0
+
+def test_missing_encoder_checkpoint(tmp_path):
+    """
+    Verify that the inference pipeline rejects
+    a missing encoder checkpoint.
+    """
+
+    missing_encoder = tmp_path / "missing_encoder.pt"
+    missing_decoder = tmp_path / "decoder.pt"
+
+    vocab = Mock()
+    vocab.__len__ = Mock(return_value=100)
+
+    with (
+        patch("src.inference.EncoderCNN"),
+        patch("src.inference.DecoderRNN"),
+    ):
+        with pytest.raises(FileNotFoundError):
+            ImageCaptioningInference(
+                config=ModelConfig(),
+                encoder_checkpoint=missing_encoder,
+                decoder_checkpoint=missing_decoder,
+                vocab=vocab,
+                device=torch.device("cpu"),
+            )
+
+def test_missing_decoder_checkpoint(tmp_path):
+    """
+    Verify that the inference pipeline rejects
+    a missing decoder checkpoint.
+    """
+
+    encoder_checkpoint = tmp_path / "encoder.pt"
+    decoder_checkpoint = tmp_path / "missing_decoder.pt"
+
+    vocab = Mock()
+    vocab.__len__ = Mock(return_value=100)
+
+    def mock_torch_load(path, map_location):
+        if path == decoder_checkpoint:
+            raise FileNotFoundError(
+                f"Checkpoint not found: {path}"
+            )
+
+        return {}
+
+    with (
+        patch("src.inference.EncoderCNN"),
+        patch("src.inference.DecoderRNN"),
+        patch(
+            "src.inference.torch.load",
+            side_effect=mock_torch_load,
+        ),
+    ):
+        with pytest.raises(
+            FileNotFoundError,
+            match="Checkpoint not found",
+        ):
+            ImageCaptioningInference(
+                config=ModelConfig(),
+                encoder_checkpoint=encoder_checkpoint,
+                decoder_checkpoint=decoder_checkpoint,
+                vocab=vocab,
+                device=torch.device("cpu"),
+            )

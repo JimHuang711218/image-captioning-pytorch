@@ -140,3 +140,43 @@ def test_invalid_index(coco_dataset):
 
     with pytest.raises(IndexError):
         dataset[100]
+
+def test_missing_image_directory(tmp_path):
+    """
+    Verify that a missing evaluation image directory
+    raises FileNotFoundError.
+    """
+
+    image_dir = tmp_path / "missing_images"
+
+    annotations_file = tmp_path / "captions.json"
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="Evaluation image directory not found",
+    ):
+        EvaluationDataset(
+            image_dir=image_dir,
+            annotations_file=annotations_file,
+        )
+
+def test_missing_annotations_file(tmp_path):
+    """
+    Verify that a missing annotations file
+    raises FileNotFoundError.
+    """
+
+    image_dir = tmp_path / "images"
+
+    image_dir.mkdir()
+
+    annotations_file = tmp_path / "missing_captions.json"
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="Evaluation annotations not found",
+    ):
+        EvaluationDataset(
+            image_dir=image_dir,
+            annotations_file=annotations_file,
+        )

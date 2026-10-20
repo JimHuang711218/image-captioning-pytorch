@@ -1,0 +1,24 @@
+{
+    "num_samples": 10,
+    "metrics": {
+        "BLEU-1": 0.598010095679418,
+        "BLEU-2": 0.4191461401530356,
+        "BLEU-3": 0.23444037613582547,
+        "BLEU-4": 0.13768677652899156
+    },
+    "evaluation_config": {
+        "device": "cpu",
+        "max_samples": 10,
+        "image_dir": "../cocoapi/val2014",
+        "annotations_file": "../cocoapi/annotations/captions_val2014.json",
+        "vocab_file": "artifacts/vocab.pkl",
+        "encoder_checkpoint": "artifacts/models/encoder-3.pt",
+        "decoder_checkpoint": "artifacts/models/decoder-3.pt",
+        "model_config": {
+            "embed_size": 256,
+            "hidden_size": 256,
+            "num_layers": 1,
+            "max_caption_length": 20
+        }
+    }
+}
