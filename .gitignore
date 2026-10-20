@@ -6,3 +6,5 @@ annotations/
 .DS_Store
 *.pkl
 !artifacts/vocab.pkl
+# Temporary evaluation reproducibility reports
+evaluation/results/bleu_run*.json
