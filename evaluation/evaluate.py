@@ -3,17 +3,17 @@ from typing import Any
 from evaluation.dataset import EvaluationDataset
 from evaluation.metrics import calculate_corpus_bleu
 from src.inference import ImageCaptioningInference
+from evaluation.qualitative import QualitativeSample, serialize_qualitative_samples
 
 import argparse
 from pathlib import Path
 
 import json
-
 import torch
-
 import pickle
 
 from src.config import ModelConfig
+
 
 def resolve_device(device_name: str) -> torch.device:
     """
@@ -196,6 +196,7 @@ def evaluate_model(
 
     predictions: list[str] = []
     references: list[list[str]] = []
+    qualitative_samples: list[QualitativeSample] = []
 
     # Evaluate a deterministic subset
     for index in range(num_samples):
@@ -210,6 +211,16 @@ def evaluate_model(
         predictions.append(prediction)
         references.append(sample.references)
 
+        # Preserve the image, prediction, and reference captions.
+        qualitative_samples.append(
+            QualitativeSample(
+                image_id=sample.image_id,
+                image_path=sample.image_path,
+                predicted_caption=prediction,
+                reference_captions=tuple(sample.references),
+            )
+        )
+
     # Calculate corpus-level BLEU metrics
     bleu_scores = calculate_corpus_bleu(
         predictions=predictions,
@@ -219,6 +230,9 @@ def evaluate_model(
     return {
         "num_samples": num_samples,
         "metrics": bleu_scores,
+        "qualitative": serialize_qualitative_samples(
+             samples=qualitative_samples,
+        ),
     }
 
 def main(
@@ -293,18 +307,33 @@ def main(
         },
     }
 
-    # 9. Save evaluation results
+    # 9. Extract qualitative evaluation results.
+    qualitative_results = results.pop("qualitative")
+
+    # 10. Save quantitative BLEU evaluation results.
     save_evaluation_results(
         results=results,
         output_path=parsed_args.output,
     )
 
+    # 11. Construct qualitative evaluation output path.
+    qualitative_output = parsed_args.output.with_name(
+        f"{parsed_args.output.stem}_qualitative.json"
+    )
+
+    # 12. Save qualitative evaluation results.
+    save_evaluation_results(
+        results=qualitative_results,
+        output_path=qualitative_output,
+    )
+
+    # 13. Display evaluation summary.
     print(
-        f"Evaluation completed successfully. "
-        f"Results saved to: {parsed_args.output}"
+        f"Evaluation completed successfully.\n"
+        f"BLEU results saved to: {parsed_args.output}\n"
+        f"Qualitative results saved to: {qualitative_output}"
     )
 
     return results
-
 if __name__ == "__main__":
     main()

@@ -58,6 +58,28 @@ def test_main_success(tmp_path):
                 "BLEU-3": 0.3,
                 "BLEU-4": 0.2,
             },
+            "qualitative": {
+                "num_samples": 2,
+                "samples": [
+                    {
+                        "image_id": 101,
+                        "image_path": "image_001.jpg",
+                        "predicted_caption": "a dog running",
+                        "reference_captions": [
+                            "a dog is running",
+                            "a dog playing outside",
+                        ],
+                    },
+                    {
+                        "image_id": 102,
+                        "image_path": "image_002.jpg",
+                        "predicted_caption": "a cat sleeping",
+                        "reference_captions": [
+                            "a cat resting on a sofa",
+                        ],
+                    },
+                ],
+            },
         }
 
         # 4. Execute the application entry point

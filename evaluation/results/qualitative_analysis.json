@@ -1,0 +1,98 @@
+{
+    "evaluation_type": "human_reviewed_qualitative_analysis",
+    "reviewed_samples": 10,
+    "annotations": [
+        {
+            "image_id": 42,
+            "error_categories": [
+                "object_substitution",
+                "scene_hallucination"
+            ],
+            "severity": "critical",
+            "notes": "A dog sleeping among shoes was incorrectly described as a cat sitting with a laptop."
+        },
+        {
+            "image_id": 73,
+            "error_categories": [
+                "object_substitution",
+                "fine_grained_classification_error"
+            ],
+            "severity": "moderate",
+            "notes": "Vintage motorcycles were incorrectly identified as bicycles. The model correctly recognized parked two-wheeled vehicles."
+        },
+        {
+            "image_id": 74,
+            "error_categories": [
+                "action_misclassification",
+                "object_hallucination",
+                "object_omission"
+            ],
+            "severity": "moderate",
+            "notes": "A dog lying on a sidewalk beside a bicycle was incorrectly described as sitting on a bench."
+        },
+        {
+            "image_id": 133,
+            "error_categories": [
+                "scene_misclassification",
+                "object_hallucination"
+            ],
+            "severity": "critical",
+            "notes": "A loft bed, desk, and dresser were incorrectly identified as kitchen appliances."
+        },
+        {
+            "image_id": 136,
+            "error_categories": [
+                "context_hallucination",
+                "object_omission",
+                "counting_error"
+            ],
+            "severity": "moderate",
+            "notes": "The model correctly identified a giraffe but hallucinated a tree and omitted the second giraffe and human observers."
+        },
+        {
+            "image_id": 139,
+            "error_categories": [
+                "object_hallucination",
+                "object_omission",
+                "generic_caption"
+            ],
+            "severity": "moderate",
+            "notes": "The model correctly identified the general living-room environment but hallucinated a couch and omitted the woman and chairs."
+        },
+        {
+            "image_id": 143,
+            "error_categories": [
+                "counting_error"
+            ],
+            "severity": "minor",
+            "notes": "The model correctly identified birds perched on branches but described only one bird."
+        },
+        {
+            "image_id": 164,
+            "error_categories": [
+                "object_hallucination",
+                "object_omission"
+            ],
+            "severity": "minor",
+            "notes": "The kitchen and microwave were correctly identified. The stove was not clearly visible, and distinctive architectural features were omitted."
+        },
+        {
+            "image_id": 192,
+            "error_categories": [
+                "action_misclassification",
+                "action_hallucination"
+            ],
+            "severity": "moderate",
+            "notes": "The model correctly recognized the baseball context but incorrectly described a player swinging a bat."
+        },
+        {
+            "image_id": 196,
+            "error_categories": [
+                "object_hallucination",
+                "generic_caption"
+            ],
+            "severity": "moderate",
+            "notes": "The model correctly identified a table containing food but hallucinated a wine glass and omitted the variety of dishes."
+        }
+    ]
+}
