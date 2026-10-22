@@ -14,6 +14,7 @@ class EvaluationSample:
     """
     image_path : Path
     references : list[str]
+    image_id : int | None = None
 
 
 class EvaluationDataset:
@@ -79,5 +80,6 @@ class EvaluationDataset:
         return EvaluationSample(
             image_path=image_path,
             references=references,
+            image_id=image_id,
         )
         

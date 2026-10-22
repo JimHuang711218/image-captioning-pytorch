@@ -1,0 +1,125 @@
+{
+    "num_samples": 10,
+    "samples": [
+        {
+            "image_id": 42,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000042.jpg",
+            "predicted_caption": "a cat is sitting on a chair with a laptop .",
+            "reference_captions": [
+                "This wire metal rack holds several pairs of shoes and sandals",
+                "A dog sleeping on a show rack in the shoes.",
+                "Various slides and other footwear rest in a metal basket outdoors.",
+                "A small dog is curled up on top of the shoes",
+                "a shoe rack with some shoes and a dog sleeping on them"
+            ]
+        },
+        {
+            "image_id": 73,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000073.jpg",
+            "predicted_caption": "a bicycle parked next to a bike on a sidewalk .",
+            "reference_captions": [
+                "A motorcycle parked in a parking space next to another motorcycle.",
+                "An old motorcycle parked beside other motorcycles with a brown leather seat.",
+                "Motorcycle parked in the parking lot of asphalt.",
+                "A close up view of a motorized bicycle, sitting in a rack. ",
+                "The back tire of an old style motorcycle is resting in a metal stand. "
+            ]
+        },
+        {
+            "image_id": 74,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000074.jpg",
+            "predicted_caption": "a dog is sitting on a bench in the street .",
+            "reference_captions": [
+                "A picture of a dog laying on the ground.",
+                "Dog snoozing by a bike on the edge of a cobblestone street",
+                "The white dog lays next to the bicycle on the sidewalk.",
+                "a white dog is sleeping on a street and a bicycle",
+                "A puppy rests on the street next to a bicycle."
+            ]
+        },
+        {
+            "image_id": 133,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000133.jpg",
+            "predicted_caption": "a kitchen with a stove and a sink",
+            "reference_captions": [
+                "A loft bed with a dresser underneath it.",
+                "A bed and desk in a small room.",
+                "Wooden bed on top of a white dresser.",
+                "A bed sits on top of a dresser and a desk.",
+                "Bunk bed with a narrow shelf sitting underneath it. "
+            ]
+        },
+        {
+            "image_id": 136,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000136.jpg",
+            "predicted_caption": "a giraffe standing next to a tree in a zoo .",
+            "reference_captions": [
+                "Two giraffes in a room with people looking at them.",
+                "Two giraffe standing next to each other in a room.",
+                "The giraffe is being kept by itself indoors. ",
+                "A man and woman staring at two giraffes through a window.",
+                "a giraffe in a enclosed area is watched by some people"
+            ]
+        },
+        {
+            "image_id": 139,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000139.jpg",
+            "predicted_caption": "a living room with a couch and a table",
+            "reference_captions": [
+                "A woman stands in the dining area at the table.",
+                "A room with chairs, a table, and a woman in it.",
+                "A woman standing in a kitchen by a window",
+                "A person standing at a table in a room.",
+                "A living area with a television and a table"
+            ]
+        },
+        {
+            "image_id": 143,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000143.jpg",
+            "predicted_caption": "a bird is standing on a tree branch .",
+            "reference_captions": [
+                "Birds perch on a bunch of twigs in the winter.",
+                "A number of small birds sitting at the top of a bare tree.",
+                "Many birds perched on the limbs of a tree.",
+                "Eight birds perch on a branch on an overcast day.",
+                "Several birds are sitting on small tree branches."
+            ]
+        },
+        {
+            "image_id": 164,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000164.jpg",
+            "predicted_caption": "a kitchen with a stove and a microwave",
+            "reference_captions": [
+                "A small kitchen with low a ceiling ",
+                "A small kichen area with a sunlight and and angled ceiling.",
+                "an image of a kitchen loft style setting",
+                "a small kitchen with a lot of filled up shelves ",
+                "A kitchen with a slanted ceiling and skylight."
+            ]
+        },
+        {
+            "image_id": 192,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000192.jpg",
+            "predicted_caption": "a baseball player swinging a bat at a baseball .",
+            "reference_captions": [
+                "A group of baseball players is crowded at the mound.",
+                "A baseball player at the area where one goes to bat ",
+                "A man that is standing in the dirt near a plate.",
+                "a baseball player on the home plate during a game",
+                "A baseball player for the Chicago Cubs stands at home plate."
+            ]
+        },
+        {
+            "image_id": 196,
+            "image_path": "../cocoapi/val2014/COCO_val2014_000000000196.jpg",
+            "predicted_caption": "a table with a plate of food and a glass of wine .",
+            "reference_captions": [
+                "This table is filled with a variety of different dishes.",
+                "A variety of food in dishes is displayed on a table.",
+                "Table of food including carrots, peas, salad, corn, gravy, pies, bread",
+                "A table layed out with food such as, salad, steamed peas and carrots, steamed corn, and bread rolls.",
+                "A table full of food such as peas and carrots, bread, salad and gravy. "
+            ]
+        }
+    ]
+}

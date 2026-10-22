@@ -15,6 +15,7 @@ def mock_dataset():
 
     samples = [
         EvaluationSample(
+            image_id=101,
             image_path=Path("image_001.jpg"),
             references=[
                 "a dog running in the park",
@@ -22,6 +23,7 @@ def mock_dataset():
             ],
         ),
         EvaluationSample(
+            image_id=102,
             image_path=Path("image_002.jpg"),
             references=[
                 "a man riding a bicycle",
@@ -29,6 +31,7 @@ def mock_dataset():
             ],
         ),
         EvaluationSample(
+            image_id=103,
             image_path=Path("image_003.jpg"),
             references=[
                 "two children playing soccer",
@@ -230,10 +233,23 @@ def test_evaluate_model_returns_metrics(
             num_samples=3,
         )
 
-    assert result == {
-        "num_samples": 3,
-        "metrics": expected_scores,
-    }
+    # Verify quantitative evaluation results.
+    assert result["num_samples"] == 3
+
+    assert result["metrics"] == expected_scores
+
+    # Verify qualitative evaluation results.
+    assert "qualitative" in result
+
+    assert result["qualitative"]["num_samples"] == 3
+
+    assert len(result["qualitative"]["samples"]) == 3
+
+    # Verify COCO image identifiers.
+    assert [
+        sample["image_id"]
+        for sample in result["qualitative"]["samples"]
+    ] == [101, 102, 103]
 
 def test_evaluation_reproducibility(mock_dataset):
     """
