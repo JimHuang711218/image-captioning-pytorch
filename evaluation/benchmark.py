@@ -4,7 +4,23 @@ from collections.abc import Callable
 import numpy as np
 import time
 import torch
+import math
 
+@dataclass(frozen=True)
+class BenchmarkResult:
+    """
+    Stores raw measurements from an inference benchmark.
+
+    Attributes:
+        latencies_ms:
+            Individual inference latencies in milliseconds.
+
+        total_seconds:
+            Total elapsed time of the measured benchmark phase.
+    """
+
+    latencies_ms: tuple[float, ...]
+    total_seconds: float
 
 @dataclass(frozen=True)
 class LatencyMetrics:
@@ -21,7 +37,7 @@ class LatencyMetrics:
     p95: float
     p99: float
 
-
+# Calculate latency statistics
 def calculate_latency_metrics(
     latencies_ms: list[float],
 ) -> LatencyMetrics:
@@ -123,12 +139,13 @@ def synchronize_device(
         f"Unsupported benchmarking device: {device}"
     )
 
+# Execute repeated inference and measure latency
 def benchmark_inference(
     inference_fn: Callable[[], object],
     warmup_runs: int = 10,
     benchmark_runs: int = 100,
     device: str | torch.device = "cpu",
-) -> list[float]:
+) -> BenchmarkResult:
     """
     Benchmark inference latency using repeated execution.
     
@@ -192,7 +209,10 @@ def benchmark_inference(
     synchronize_device(device)
 
     # Step 3: Initialize latency measurements
-    latencies_ms = []
+    latencies_ms: list[float] = []
+
+    # Start overall benchmark measurement
+    benchmark_start = time.perf_counter()
 
     # Step 4: Execute measured inference runs
     for _ in range(benchmark_runs):
@@ -206,6 +226,9 @@ def benchmark_inference(
         # Execute one inference operation
         inference_fn()
 
+        # Ensure inference execution has completed
+        synchronize_device(device)
+
         # Stop timer
         end_time = time.perf_counter()
 
@@ -215,4 +238,66 @@ def benchmark_inference(
         # Record the measurement
         latencies_ms.append(latency_ms)
     
-    return latencies_ms
+    # Stop over all benchmark measurement
+    benchmark_end = time.perf_counter()
+
+    total_seconds = benchmark_end - benchmark_start
+    
+    return BenchmarkResult(
+        latencies_ms=tuple(latencies_ms),
+        total_seconds=total_seconds,
+    )
+
+# 
+def calculate_throughput(
+    num_inferences: int,
+    total_seconds: float,
+) -> float:
+    """
+    Calculate inference throughput in captions per second.
+
+    Args:
+        num_inferences:
+            Number of completed inference operations.
+        
+        total_seconds:
+            Total elapsed inference time in seconds.
+
+    Returns:
+        float:
+            Throughput in captions per second.
+
+    Raises:
+        ValueError:
+            If the input arguments are invalid.
+    """
+
+    # Step 1: Validate inference count
+    if not isinstance(num_inferences, int) or isinstance(num_inferences, bool):
+        raise ValueError(
+            "num_inferences must be an integer."
+        )
+    
+    if num_inferences <= 0:
+        raise ValueError(
+            "num_inferences must be positive."
+        )
+    
+    # Step 2: Validate elapsed time
+    if not isinstance(total_seconds, (int, float)) or isinstance(total_seconds, bool):
+        raise ValueError(
+            "total_seconds must be a real number."
+        )
+    
+    if not math.isfinite(total_seconds):
+        raise ValueError("total_seconds must be finite.")
+    
+    if total_seconds <= 0:
+        raise ValueError(
+            "total_seconds must be positive."
+        )
+    
+    # Step 3: Calculate throughput
+    throughput = num_inferences / total_seconds
+
+    return throughput
