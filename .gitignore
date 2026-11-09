@@ -8,3 +8,17 @@ annotations/
 !artifacts/vocab.pkl
 # Temporary evaluation reproducibility reports
 evaluation/results/bleu_run*.json
+# Python coverage
+.coverage
+.coverage.*
+htmlcov/
+
+# Python test cache
+.pytest_cache/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Generated benchmark output
+results/
