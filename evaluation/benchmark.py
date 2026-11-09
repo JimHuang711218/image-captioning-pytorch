@@ -170,7 +170,7 @@ def benchmark_inference(
     
     Returns:
         list[float]:
-            individual inference latencies in milliseconds.
+            Raw inference latency measurements and total elapsed benchmark time.
         
     Raises:
         ValueError:

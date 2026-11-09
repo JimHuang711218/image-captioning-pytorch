@@ -1,7 +1,14 @@
+from unittest.mock import patch
+
 import pytest
+import torch
 
-from evaluation.benchmark import calculate_latency_metrics, benchmark_inference, synchronize_device, calculate_throughput
-
+from evaluation.benchmark import (
+    benchmark_inference,
+    calculate_latency_metrics,
+    calculate_throughput,
+    synchronize_device,
+)
 
 def test_calculate_latency_metrics():
 
@@ -78,7 +85,7 @@ def test_benchmark_execution_counts():
     assert all(latency >= 0 for latency in result.latencies_ms)
     assert result.total_seconds >= 0
 
-# Test 2: Verify zero warm-up runs 
+# Test 2: Verify zero warm-up runs
 def test_benchmark_inference_zero_warmup():
 
     call_count = 0
@@ -249,7 +256,7 @@ def test_benchmark_synchronization_order(monkeypatch):
         "synchronize",  # After measured inference
     ]
 
-    
+
 '''------ Test Throughput ------'''
 # Test 1: Normal throughput calculation
 def test_calculate_throughput():
@@ -288,3 +295,78 @@ def test_calculate_throughput_invalid_time(total_seconds):
             num_inferences=100,
             total_seconds=total_seconds,
         )
+
+# CUDA Synchronization Sucess
+def test_synchronize_device_cuda():
+
+    with patch(
+        "evaluation.benchmark.torch.cuda.is_available",
+        return_value=True,
+    ), patch(
+        "evaluation.benchmark.torch.cuda.synchronize"
+    ) as mock_synchronize:
+
+        synchronize_device("cuda")
+
+    mock_synchronize.assert_called_once_with(
+        torch.device("cuda")
+    )
+
+# CUDA Unavailable
+def test_synchronize_device_cuda_unavailable():
+
+    with patch(
+        "evaluation.benchmark.torch.cuda.is_available",
+        return_value=False,
+    ), patch(
+        "evaluation.benchmark.torch.cuda.synchronize"
+    ) as mock_synchronize:
+
+        with pytest.raises(
+            RuntimeError,
+            match="CUDA is not available",
+        ):
+            synchronize_device("cuda")
+
+    mock_synchronize.assert_not_called()
+
+# MPS Synchronization Success
+def test_synchronize_device_mps():
+
+    with patch(
+        "evaluation.benchmark.torch.backends.mps.is_available",
+        return_value=True,
+    ), patch(
+        "evaluation.benchmark.torch.mps.synchronize"
+    ) as mock_synchronize:
+
+        synchronize_device("mps")
+
+    mock_synchronize.assert_called_once_with()
+
+# MPS Unavailable
+def test_synchronize_device_mps_unavailable():
+
+    with patch(
+        "evaluation.benchmark.torch.backends.mps.is_available",
+        return_value=False,
+    ), patch(
+        "evaluation.benchmark.torch.mps.synchronize"
+    ) as mock_synchronize:
+
+        with pytest.raises(
+            RuntimeError,
+            match="MPS is not available",
+        ):
+            synchronize_device("mps")
+
+    mock_synchronize.assert_not_called()
+
+# Unsupported Device
+def test_synchronize_device_unsupported():
+
+    with pytest.raises(
+        ValueError,
+        match="Unsupported benchmarking device",
+    ):
+        synchronize_device("meta")
