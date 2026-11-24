@@ -4,10 +4,11 @@ import pytest
 import torch
 
 from evaluation.benchmark import (
-    benchmark_inference,
     calculate_latency_metrics,
     calculate_throughput,
     synchronize_device,
+    validate_device,
+    benchmark_inference,
 )
 
 def test_calculate_latency_metrics():
@@ -370,3 +371,21 @@ def test_synchronize_device_unsupported():
         match="Unsupported benchmarking device",
     ):
         synchronize_device("meta")
+
+def test_validate_device_cpu():
+    device = validate_device("cpu")
+
+    assert device == torch.device("cpu")
+
+def test_validate_device_cuda_unavailable(monkeypatch):
+    monkeypatch.setattr(
+        torch.cuda,
+        "is_available",
+        lambda: False,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="CUDA is not available",
+    ):
+        validate_device("cuda")

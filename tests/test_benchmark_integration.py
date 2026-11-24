@@ -87,7 +87,7 @@ def test_real_pytorch_inference_benchmark():
     # Step 4: Define the inference callable
     def inference_fn() -> str:
         return inference_service.predict(image_path)
-    
+
     # Step 5: Execute the benchmark
     result = benchmark_inference(
         inference_fn=inference_fn,
@@ -135,7 +135,7 @@ def test_real_inference_cpu_mps(device):
     # Step 1: Check device availability
     if device == "mps" and not torch.backends.mps.is_available():
         pytest.skip("MPS is not available")
-    
+
     # Step 2: Create a real inference callable
     inference_service = create_benchmark_inference(
         device=device
@@ -232,6 +232,25 @@ def test_real_inference_cpu_mps(device):
         f"Throughput: {throughput:.2f} captions/sec"
     )
 
+
+def run_device_benchmark(
+    device: str,
+    image_path: Path,
+):
+    inference_service = create_benchmark_inference(
+        device=device
+    )
+
+    def inference_fn() -> str:
+        return inference_service.predict(image_path)
+
+    return benchmark_inference(
+        inference_fn=inference_fn,
+        warmup_runs=10,
+        benchmark_runs=100,
+        device=device,
+    )
+
 @pytest.mark.model
 @pytest.mark.parametrize(
     "device_order",
@@ -271,24 +290,10 @@ def test_benchmark_execution_order(
     results = {}
 
     for device in device_order:
-
-        # Step 1: Create real inference function
-        inference_service = create_benchmark_inference(
-            device=device
-        )
-
-        def inference_fn():
-            return inference_service.predict(image_path)
-        
-        # Step 2: Execute benchmark inference
-        result = benchmark_inference(
-            inference_fn=inference_fn,
-            warmup_runs=10,
-            benchmark_runs=100,
+        results[device] = run_device_benchmark(
             device=device,
+            image_path=image_path,
         )
-
-        results[device] = result
 
     # Validate results
 

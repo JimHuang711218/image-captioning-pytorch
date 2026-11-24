@@ -85,12 +85,65 @@ def calculate_latency_metrics(
         p99=float(np.percentile(values, 99)),
     )
 
+def calculate_throughput(
+    num_inferences: int,
+    total_seconds: float,
+) -> float:
+    """
+    Calculate inference throughput in captions per second.
+
+    Args:
+        num_inferences:
+            Number of completed inference operations.
+
+        total_seconds:
+            Total elapsed inference time in seconds.
+
+    Returns:
+        float:
+            Throughput in captions per second.
+
+    Raises:
+        ValueError:
+            If the input arguments are invalid.
+    """
+
+    # Step 1: Validate inference count
+    if not isinstance(num_inferences, int) or isinstance(num_inferences, bool):
+        raise ValueError(
+            "num_inferences must be an integer."
+        )
+
+    if num_inferences <= 0:
+        raise ValueError(
+            "num_inferences must be positive."
+        )
+
+    # Step 2: Validate elapsed time
+    if not isinstance(total_seconds, (int, float)) or isinstance(total_seconds, bool):
+        raise ValueError(
+            "total_seconds must be a real number."
+        )
+
+    if not math.isfinite(total_seconds):
+        raise ValueError("total_seconds must be finite.")
+
+    if total_seconds <= 0:
+        raise ValueError(
+            "total_seconds must be positive."
+        )
+
+    # Step 3: Calculate throughput
+    throughput = num_inferences / total_seconds
+
+    return throughput
+
 # Implement device synchronization
 def synchronize_device(
     device: str | torch.device
 ) -> None:
     """
-    Synchronize the execution device before or after 
+    Synchronize the execution device before or after
     measuring inference latency.
 
     CPU operations are generally synchronous.
@@ -102,7 +155,7 @@ def synchronize_device(
     Args:
         device:
             Execution device: cpu, cuda, or mps.
-    
+
     Raises:
         ValueError:
             If the device type is unsupported.
@@ -112,7 +165,7 @@ def synchronize_device(
 
     if device.type == "cpu":
         return
-    
+
     if device.type == "cuda":
 
         if not torch.cuda.is_available():
@@ -134,10 +187,81 @@ def synchronize_device(
 
         torch.mps.synchronize()
         return
-    
+
     raise ValueError(
         f"Unsupported benchmarking device: {device}"
     )
+
+def validate_device(
+    device: str | torch.device,
+) -> torch.device:
+    """
+    Validate that the requested PyTorch device is supported
+    and available for inference.
+
+    Args:
+        device:
+            Requested execution device.
+
+    Returns:
+        torch.device:
+            A validated PyTorch device.
+
+    Raises:
+        ValueError:
+            If the requested device is unsupported.
+
+        RuntimeError:
+            If the requested device is unavailable.
+    """
+
+    # Step 1: Normalize the device representation.
+    if not isinstance(device, (str, torch.device)):
+        raise ValueError(
+            f"Unsupported device: {device}"
+        )
+
+    try:
+        torch_device = torch.device(device)
+    except (RuntimeError, ValueError) as exc:
+        raise ValueError(
+            f"Unsupported device: {device}"
+        ) from exc
+
+    # Step 2: Validate supported device types.
+    if torch_device.type not in {"cpu", "cuda", "mps"}:
+        raise ValueError(
+            f"Unsupported device: {device}"
+        )
+
+    # Step 3: Check CUDA availability.
+    if torch_device.type == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError(
+                "CUDA is not available."
+            )
+
+        if (
+            torch_device.index is not None
+            and torch_device.index >= torch.cuda.device_count()
+        ):
+            raise RuntimeError(
+                f"CUDA device index {torch_device.index} is unavailable."
+            )
+
+    # Step 4: Check MPS availability.
+    if torch_device.type == "mps":
+        if not torch.backends.mps.is_available():
+            raise RuntimeError(
+                "MPS is not available."
+            )
+
+        if torch_device.index not in (None, 0):
+            raise ValueError(
+                "Only the default MPS device is supported."
+            )
+
+    return torch_device
 
 # Execute repeated inference and measure latency
 def benchmark_inference(
@@ -148,17 +272,17 @@ def benchmark_inference(
 ) -> BenchmarkResult:
     """
     Benchmark inference latency using repeated execution.
-    
+
     The function performs configurable warm-up runs
     before collecting latency measurements.
 
     Each benchmark run measures the execution time of
     one inference call.
-    
+
     Args:
         inference_fn:
             A callable that performs one inference operations.
-        
+
         warmup_runs:
             Number of unmeasured warm-up runs.
 
@@ -167,14 +291,14 @@ def benchmark_inference(
 
         device:
             Execution device: cpu, cuda, or mps.
-    
+
     Returns:
         list[float]:
             Raw inference latency measurements and total elapsed benchmark time.
-        
+
     Raises:
         ValueError:
-            If warmup_runs is negative or benchmark_runs 
+            If warmup_runs is negative or benchmark_runs
             is not positive
     """
 
@@ -183,28 +307,28 @@ def benchmark_inference(
         raise ValueError(
             "warmup_runs must be an integer."
         )
-    
+
     if not isinstance(benchmark_runs, int) or isinstance(benchmark_runs, bool):
         raise ValueError(
             "benchmark_runs must be an integer."
         )
-    
+
     if warmup_runs < 0:
         raise ValueError(
             "warmup_runs must be non-negative."
         )
-    
+
     if benchmark_runs <= 0:
         raise ValueError(
             "benchmark_runs must be positive."
         )
-    
-    device = torch.device(device)
+
+    device = validate_device(device)
 
     # Step 2: Perform warm-up executions
     for _ in range(warmup_runs):
         inference_fn()
-    
+
     # Ensure all warm-up operations have completed
     synchronize_device(device)
 
@@ -237,67 +361,13 @@ def benchmark_inference(
 
         # Record the measurement
         latencies_ms.append(latency_ms)
-    
+
     # Stop over all benchmark measurement
     benchmark_end = time.perf_counter()
 
     total_seconds = benchmark_end - benchmark_start
-    
+
     return BenchmarkResult(
         latencies_ms=tuple(latencies_ms),
         total_seconds=total_seconds,
     )
-
-# 
-def calculate_throughput(
-    num_inferences: int,
-    total_seconds: float,
-) -> float:
-    """
-    Calculate inference throughput in captions per second.
-
-    Args:
-        num_inferences:
-            Number of completed inference operations.
-        
-        total_seconds:
-            Total elapsed inference time in seconds.
-
-    Returns:
-        float:
-            Throughput in captions per second.
-
-    Raises:
-        ValueError:
-            If the input arguments are invalid.
-    """
-
-    # Step 1: Validate inference count
-    if not isinstance(num_inferences, int) or isinstance(num_inferences, bool):
-        raise ValueError(
-            "num_inferences must be an integer."
-        )
-    
-    if num_inferences <= 0:
-        raise ValueError(
-            "num_inferences must be positive."
-        )
-    
-    # Step 2: Validate elapsed time
-    if not isinstance(total_seconds, (int, float)) or isinstance(total_seconds, bool):
-        raise ValueError(
-            "total_seconds must be a real number."
-        )
-    
-    if not math.isfinite(total_seconds):
-        raise ValueError("total_seconds must be finite.")
-    
-    if total_seconds <= 0:
-        raise ValueError(
-            "total_seconds must be positive."
-        )
-    
-    # Step 3: Calculate throughput
-    throughput = num_inferences / total_seconds
-
-    return throughput

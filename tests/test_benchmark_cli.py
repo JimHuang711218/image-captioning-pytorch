@@ -1,10 +1,19 @@
+from pathlib import Path
 from unittest.mock import patch
 import json
-
-from evaluation.benchmark_cli import parse_args, main, run_benchmark, save_benchmark_results
-from evaluation.benchmark import BenchmarkResult
-
 import pytest
+
+from evaluation.benchmark_cli import (
+    parse_args,
+    main,
+    run_benchmark,
+    validate_artifacts,
+)
+from evaluation.benchmark import (
+    BenchmarkResult,
+    validate_device,
+)
+from evaluation.benchmark_serialization import save_benchmark_result
 
 def test_parse_args_defaults():
 
@@ -13,9 +22,7 @@ def test_parse_args_defaults():
     assert args.device == "cpu"
     assert args.warmup_runs == 10
     assert args.benchmark_runs == 100
-    assert args.output == (
-        "evaluation/results/benchmark_results.json"
-    )
+    assert args.output is None
 
 @pytest.mark.parametrize(
     "warmup_runs",
@@ -106,7 +113,7 @@ def test_parse_args_valid_output(output_path):
         output_path,
     ])
 
-    assert args.output == output_path
+    assert args.output == Path(output_path)
 
 def test_parse_args_missing_output():
 
@@ -204,7 +211,7 @@ def test_run_benchmark_configuration():
 
     assert results["total_seconds"] == pytest.approx(0.09)
 
-    assert results["latency_ms"]["mean"] == pytest.approx(20.0)
+    assert results["latencies_ms"]["mean"] == pytest.approx(20.0)
 
     assert results["throughput_per_second"] == pytest.approx(
         3 / 0.09
@@ -228,7 +235,7 @@ def test_run_benchmark_real_execution():
 
     assert call_count == 7
     assert results["benchmark_runs"] == 5
-    assert results["latency_ms"]["mean"] >= 0
+    assert results["latencies_ms"]["mean"] >= 0
     assert results["throughput_per_second"] > 0
 
 def test_save_benchmark_results(tmp_path):
@@ -240,15 +247,15 @@ def test_save_benchmark_results(tmp_path):
         "warmup_runs": 5,
         "benchmark_runs": 3,
         "total_seconds": 0.09,
-        "latency_ms": {
+        "latencies_ms": {
             "mean": 20.0,
             "median": 20.0
         },
         "throughput_per_second": 33.333,
     }
 
-    save_benchmark_results(
-        results=results,
+    save_benchmark_result(
+        serialized=results,
         output_path=str(output_path)
     )
 
@@ -269,15 +276,17 @@ def test_save_benchmark_results_invalid_nan(tmp_path):
     }
 
     with pytest.raises(ValueError):
-        save_benchmark_results(
-            results=results,
+        save_benchmark_result(
+            serialized=results,
             output_path=str(output_path),
         )
 
 def test_main_full_workflow(tmp_path):
 
+    # Step 1: Define the output path.
     output_path = tmp_path / "benchmark.json"
 
+    # Step 2: Track inference execution count.
     call_count = 0
 
     def fake_inference():
@@ -285,6 +294,7 @@ def test_main_full_workflow(tmp_path):
         call_count += 1
         return "A dog running in a park."
 
+    # Step 3: Execute the complete CLI workflow.
     exit_code = main(
         [
             "--device",
@@ -299,23 +309,46 @@ def test_main_full_workflow(tmp_path):
         inference_fn=fake_inference,
     )
 
+    # Step 4: Validate successful execution.
     assert exit_code == 0
 
+    # 2 warmup runs + 5 measured runs.
     assert call_count == 7
 
-    assert output_path.exists()
+    # Step 5: Verify that the JSON file exists.
+    assert output_path.is_file()
 
+    # Step 6: Load the persisted JSON.
     with output_path.open("r", encoding="utf-8") as file:
         results = json.load(file)
 
-    assert results["device"] == "cpu"
-    assert results["warmup_runs"] == 2
-    assert results["benchmark_runs"] == 5
+    # Step 7: Validate the serialized structure.
+    assert "metadata" in results
+    assert "raw_measurements" in results
 
-    assert results["latency_ms"]["mean"] >= 0
-    assert results["throughput_per_second"] > 0
+    # Step 8: Validate benchmark metadata.
+    metadata = results["metadata"]
 
+    assert metadata["device"] == "cpu"
+    assert metadata["warmup_runs"] == 2
+    assert metadata["benchmark_runs"] == 5
 
+    # Step 9: Validate raw benchmark measurements.
+    raw_measurements = results["raw_measurements"]
+
+    latencies = raw_measurements["latencies_ms"]
+
+    assert isinstance(latencies, list)
+    assert len(latencies) == 5
+
+    assert all(
+        isinstance(latency, (int, float)) and latency >= 0
+        for latency in latencies
+    )
+
+    assert raw_measurements["total_seconds"] > 0
+
+'''
 def test_main_missing_inference():
 
     with pytest.raises(ValueError, match="inference function"):
@@ -325,3 +358,167 @@ def test_main_missing_inference():
             "--benchmark-runs",
             "5",
         ])
+'''
+
+def test_validate_artifacts_success(tmp_path):
+    """
+    Verify that artifact validation succeeds
+    when all required files exist.
+    """
+
+    vocab_path = tmp_path / "vocab.pkl"
+    encoder_checkpoint = tmp_path / "encoder.pt"
+    decoder_checkpoint = tmp_path / "decoder.pt"
+
+    for path in (
+        vocab_path,
+        encoder_checkpoint,
+        decoder_checkpoint,
+    ):
+        # Create an empty file in the given path
+        path.touch()
+
+    validate_artifacts(
+        vocab_path=vocab_path,
+        encoder_checkpoint=encoder_checkpoint,
+        decoder_checkpoint=decoder_checkpoint,
+    )
+
+def test_validate_artifacts_missing_vocab(tmp_path):
+    """
+    Verify that missing vocabulary raises FileNotFoundError
+    """
+
+    vocab_path = tmp_path / "vocab.pkl"
+    encoder_checkpoint = tmp_path / "encoder.pt"
+    decoder_checkpoint = tmp_path / "decoder.pt"
+
+    encoder_checkpoint.touch()
+    decoder_checkpoint.touch()
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="Required inference artifact not found."
+    ):
+        validate_artifacts(
+            vocab_path=vocab_path,
+            encoder_checkpoint=encoder_checkpoint,
+            decoder_checkpoint=decoder_checkpoint,
+        )
+
+
+import pytest
+
+@pytest.mark.parametrize(
+    "missing_artifact",
+    [
+        "vocab",
+        "encoder",
+        "decoder",
+    ],
+)
+def test_validate_artifacts_missing_file(
+    tmp_path,
+    missing_artifact,
+):
+    """
+    Verify that validate_artifacts raises FileNotFoundError
+    when any required inference artifact is missing.
+
+    Test cases:
+        1. Missing vocabulary file.
+        2. Missing encoder checkpoint.
+        3. Missing decoder checkpoint.
+    """
+
+    # Step 1: Define paths for all required artifacts.
+    artifacts = {
+        "vocab": tmp_path / "vocab.pkl",
+        "encoder": tmp_path / "encoder.pth",
+        "decoder": tmp_path / "decoder.pth",
+    }
+
+    # Step 2: Create the selected artifact as a directory.
+    # Create the remaining artifacts as regular files.
+    for name, path in artifacts.items():
+        if name == missing_artifact:
+            path.mkdir()
+        else:
+            path.touch()
+
+    # Step 3: Verify the missing artifact raises FileNotFoundError.
+    with pytest.raises(
+        FileNotFoundError,
+        match="Required inference artifact not found",
+    ) as exc_info:
+        validate_artifacts(
+            vocab_path=artifacts["vocab"],
+            encoder_checkpoint=artifacts["encoder"],
+            decoder_checkpoint=artifacts["decoder"],
+        )
+
+    # Step 4: Verify the error identifies the correct missing file.
+    assert str(artifacts[missing_artifact]) in str(
+        exc_info.value
+    )
+
+def test_main_initializes_real_inference(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify that main() initializes the inference service
+    when no inference callable is injected.
+    """
+
+    import evaluation.benchmark_cli as cli
+
+    calls = []
+
+    class FakeInferenceService:
+        def predict(self, image_path: Path) -> str:
+            calls.append(image_path)
+            return "A test caption."
+
+    def fake_create_benchmark_inference(
+        device: str,
+    ) -> FakeInferenceService:
+        assert device == "cpu"
+        return FakeInferenceService()
+
+    monkeypatch.setattr(
+        cli,
+        "create_benchmark_inference",
+        fake_create_benchmark_inference,
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "PROJECT_ROOT",
+        tmp_path,
+    )
+
+    image_dir = tmp_path / "images"
+    image_dir.mkdir()
+
+    (image_dir / "coco-examples.jpg").touch()
+
+    exit_code = cli.main(
+        argv=[
+            "--device",
+            "cpu",
+            "--warmup-runs",
+            "1",
+            "--benchmark-runs",
+            "3",
+        ],
+    )
+
+    assert exit_code == 0
+
+    assert len(calls) == 4
+
+    assert all(
+        path == image_dir / "coco-examples.jpg"
+        for path in calls
+    )

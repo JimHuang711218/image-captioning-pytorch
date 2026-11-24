@@ -1,12 +1,26 @@
+# Standard library imports
 import argparse
 import json
 import pickle
+from collections.abc import Callable
+from dataclasses import asdict
+from pathlib import Path
+
+# Thrird-party imports
 import torch
 
-from pathlib import Path
-from dataclasses import asdict
-from collections.abc import Callable
-from evaluation.benchmark import benchmark_inference, calculate_latency_metrics, calculate_throughput
+# Local apllication imports
+from evaluation.benchmark import(
+    calculate_latency_metrics,
+    calculate_throughput,
+    validate_device,
+    benchmark_inference,
+)
+from evaluation.benchmark_serialization import (
+    save_benchmark_result,
+    serialize_benchmark_result,
+)
+from evaluation.benchmark_metadata import collect_benchmark_metadata
 from src.config import ModelConfig
 from src.inference import ImageCaptioningInference
 
@@ -46,9 +60,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--output",
-        type=str,
-        default="evaluation/results/benchmark_results.json",
-        help="Path of the benchmark results JSON file."
+        type=Path,
+        default=None,
+        help="Optional path to save benchmark results as JSON."
     )
 
     return parser
@@ -139,51 +153,36 @@ def run_benchmark(
         "warmup_runs": warmup_runs,
         "benchmark_runs": benchmark_runs,
         "total_seconds": benchmark_result.total_seconds,
-        "latency_ms": asdict(latency_metrics),
+        "latencies_ms": asdict(latency_metrics),
         "throughput_per_second": throughput,
     }
 
     return results
 
-def save_benchmark_results(
-    results: dict[str, object],
-    output_path: str,
+def validate_artifacts(
+    vocab_path: Path,
+    encoder_checkpoint: Path,
+    decoder_checkpoint: Path,
 ) -> None:
     """
-    Serialize benchmark results into a JSON file.
-
-    Args:
-        results:
-            Benchmark configuration and performance metrics
-
-        output_path:
-            Destination path for the JSON file.
+    Validate the existence of required inference artifacts.
 
     Raises:
-        OSError:
-            If the output directory or file cannot be created.
-
-        TypeError:
-            If results contain objects that cannot be serialized
+        FileNotFoundError:
+            If any required artifacts is not found.
     """
 
-    # Step 1: Convert output path into a Path object
-    path = Path(output_path)
-
-    # Step 2: Create parent directories if necessary
-    path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
+    required_artifacts = (
+        vocab_path,
+        encoder_checkpoint,
+        decoder_checkpoint,
     )
 
-    # Step 3: Serialize benchmark results
-    with path.open("w", encoding="utf-8") as file:
-        json.dump(
-            results,
-            file,
-            indent=4,
-            allow_nan=False,
-        )
+    for artifact in required_artifacts:
+        if not artifact.is_file():
+            raise FileNotFoundError(
+                f"Required inference artifact not found: {artifact}"
+            )
 
 def create_benchmark_inference(
         device: str,
@@ -201,7 +200,7 @@ def create_benchmark_inference(
             Initialized inference service.
     """
 
-    torch_device = torch.device(device)
+    torch_device = validate_device(device)
 
     vocab_path = (
         PROJECT_ROOT / "artifacts" / "vocab.pkl"
@@ -221,11 +220,17 @@ def create_benchmark_inference(
         / "decoder-3.pt"
     )
 
+    validate_artifacts(
+        vocab_path=vocab_path,
+        encoder_checkpoint=encoder_checkpoint,
+        decoder_checkpoint=decoder_checkpoint,
+    )
+
     with vocab_path.open("rb") as file:
         vocab = pickle.load(file)
 
     inference_service = ImageCaptioningInference(
-        config=ModelConfig,
+        config=ModelConfig(),
         encoder_checkpoint=encoder_checkpoint,
         decoder_checkpoint=decoder_checkpoint,
         vocab=vocab,
@@ -258,28 +263,60 @@ def main(
     # Step 1: Parse CLI arguments
     args = parse_args(argv)
 
-    # Step 2: Validate inference dependency
+    # Step 2: Initialize real inference when no callable is injected.
     if inference_fn is None:
-        raise ValueError(
-            "An inference function must be provided."
-        )
+
+       inference_service = create_benchmark_inference(
+           device=args.device,
+       )
+
+       # Resolve benchmark image path
+       image_path = (
+           PROJECT_ROOT
+           / "images"
+           / "coco-examples.jpg"
+       )
+
+       # Validate benchmark input
+       if not image_path.is_file():
+           raise FileNotFoundError(
+               f"Benchmark image not found: {image_path}"
+           )
+
+       # Bind the initialized service to a zero-argument callable
+       def inference_fn () -> str:
+           return inference_service.predict(image_path)
 
     # Step 3: Execute benchmarking
-    results = run_benchmark(
+    results = benchmark_inference(
         inference_fn=inference_fn,
         warmup_runs=args.warmup_runs,
         benchmark_runs=args.benchmark_runs,
         device=args.device,
     )
 
-    # Step 4: Save benchmark results
-    save_benchmark_results(
-        results=results,
-        output_path=args.output,
+    # Step 4: Collect benchmark metadata
+    metadata = collect_benchmark_metadata(
+        device=args.device,
+        warmup_runs=args.warmup_runs,
+        benchmark_runs=args.benchmark_runs
     )
 
-    # Step 5: Report Completion
-    print(f"Benchmark results saved to: {args.output}")
+    # Step 5. Optional persist benchmark results
+    if args.output is not None:
+        serialized = serialize_benchmark_result(
+            result=results,
+            metadata=metadata,
+        )
+
+        # Step 6: Save benchmark results
+        save_benchmark_result(
+            serialized=serialized,
+            output_path=args.output,
+        )
+
+        # Step 7: Report Completion
+        print(f"Benchmark results saved to: {args.output}")
 
     return 0
 
