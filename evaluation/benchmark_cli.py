@@ -213,7 +213,7 @@ def create_benchmark_inference(
         / "encoder-3.pt"
     )
 
-    decoder_checkpoint =(
+    decoder_checkpoint = (
         PROJECT_ROOT
         / "artifacts"
         / "models"
@@ -284,7 +284,7 @@ def main(
            )
 
        # Bind the initialized service to a zero-argument callable
-       def inference_fn () -> str:
+       def inference_fn() -> str:
            return inference_service.predict(image_path)
 
     # Step 3: Execute benchmarking
