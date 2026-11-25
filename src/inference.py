@@ -129,9 +129,10 @@ class ImageCaptioningInference:
         image_path: Union[str, Path]
     ) -> str:
         # Load the images and ensure it has exactly 3RGB channels
-        image = Image.open(image_path).convert("RGB")
+        with Image.open(image_path) as image:
+            rgb_image = image.convert("RGB")
 
-        image_tensor = self.preprocess_image(image)
+        image_tensor = self.preprocess_image(rgb_image)
 
         token_ids = self.generate_tokens(image_tensor)
 
